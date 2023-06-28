@@ -1,5 +1,5 @@
 #define outPin 2
-int intensity = 50;
+int intensity = 20;
 unsigned long timeRefHigh = 0;
 unsigned long timeRefLow = 0;
 int highPulsTimer = 0;
@@ -20,8 +20,9 @@ void setup() {
 
 void loop() {
   unsigned long cas = millis();
-  highPulsTimer = timeRefHigh + intensity - cas;
+  highPulsTimer = timeRefLow + intensity - cas;
   lowPulseTimer = timeRefLow + 200 - intensity - cas;
+  //pocitat cas od jednoho bodu kekw a nebo spravne xD KEKW
   timers();
 }
 

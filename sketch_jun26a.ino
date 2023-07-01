@@ -21,7 +21,7 @@ void setup() {
 void loop() {
   unsigned long cas = millis();
   highPulsTimer = timeRefLow + intensity - cas;
-  lowPulseTimer = timeRefLow + 200 - intensity - cas;
+  lowPulseTimer = timeRefLow + 200 - cas;
   //pocitat cas od jednoho bodu kekw a nebo spravne xD KEKW
   timers();
 }
@@ -30,7 +30,7 @@ void timers() {
 
   //high pulz
   if (highPulsTimer <= 0) {
-    timeRefHigh = millis();
+    // timeRefHigh = millis();
     digitalWrite(outPin, LOW);
     if (state == 1) {
       readInput();
@@ -50,19 +50,19 @@ void timers() {
 
 
 void readInput() {
-  // if (Serial.available() > 0) {
-  //   intensity = Serial.parseInt();
-  //   Serial.println(intensity);
-    intensity = mappingTable[intensity];
+  if (Serial.available() > 0) {
+    intensity = Serial.parseInt();
+    // intensity = mappingTable[intensity];
+    Serial.println(intensity);
     ifintensity0 = intensity - 100;
     ifintensity1 = intensity - 100;
-    Serial.println(intensity);
     if (ifintensity0 >= 0) {
       state = 0;
     }
     if (ifintensity1 < 0) {
       state = 1;
     }
+  }
 
 }
 
@@ -71,11 +71,4 @@ void readInput() {
 
 void expesiveOperation() {
   readInput();
-  // Serial.print("1: ");
-  // Serial.println(high0);
-  // Serial.print("2: ");
-  // Serial.println(high1);
-  // for (int i = 0; i < 3; i++) {
-  //   Serial.println("imexpensive");
-  // }
 }

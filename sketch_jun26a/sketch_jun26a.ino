@@ -1,23 +1,28 @@
 
 #include <LCD_I2C.h>
 #define outPin 2
-int intensity = 20;
+int readIntensity = 20;
+int intesity = 0;
 unsigned long timeRefHigh = 0;
 unsigned long timeRefLow = 0;
 unsigned long timeRefLcd = 0;
+unsigned long timeRefInterpolation = 0;
+bool turnoff = false;
 int highPulsTimer = 0;
 int lowPulseTimer = 0;
+int interpolationTimer = 0;
 int lcdTimer = 0;
 int ifintensity0 = 0;
 int ifintensity1 = 0;
 int state = 0;
-int mappingTable[] = { 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 51, 52, 53, 54, 55, 56, 57, 58, 59, 61, 61, 62, 63, 64, 65, 66, 67, 68, 69, 71, 71, 72, 73, 74, 75, 76, 77, 78, 79, 81, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 91, 92, 93, 94, 95, 96, 97, 98, 99, 101, 101, 102, 103, 104, 105, 106, 107, 108, 109, 111, 111, 112, 113, 114, 115, 116, 117, 118, 119, 121, 121, 122, 123, 124, 125, 126, 127, 128, 129, 131, 131, 132, 133, 134, 135, 136, 137, 138, 139, 141, 141, 142, 143, 144, 145, 146, 147, 148, 149, 151, 151, 152, 153, 154, 155, 156, 157, 158, 159, 161, 161, 162, 163, 164, 165, 166, 167, 168, 169, 171, 171, 172, 173, 174, 175, 176, 177, 178, 179, 181, 181, 182, 183, 184, 185, 186, 187, 188, 189, 191, 191, 192, 193, 194, 195, 196, 197, 198, 199, 199 };
+int mappingTable[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200 };
 LCD_I2C lcd(0x27, 16, 2);
 
 void setup() {
   Serial.begin(9600);
   pinMode(outPin, OUTPUT);
   pinMode(7, INPUT);
+  pinMode(A0, INPUT);
   digitalWrite(outPin, LOW);
   timeRefHigh = millis();
   timeRefLow = millis();
@@ -28,94 +33,175 @@ void setup() {
 
 void loop() {
   unsigned long cas = millis();
-  highPulsTimer = timeRefLow + intensity - cas;
+  //change readIntensity to real intensity;
+  highPulsTimer = timeRefLow + intesity - cas;
   lowPulseTimer = timeRefLow + 200 - cas;
   lcdTimer = timeRefLcd + 500 - cas;
+  interpolationTimer = timeRefInterpolation + 100 - cas;
   //pocitat cas od jednoho bodu kekw a nebo spravne xD KEKW
+
   timers();
 }
 
 void timers() {
 
-  //high pulz
-  if (highPulsTimer <= 0) {
-    // timeRefHigh = millis();
+  if(intesity == 0)
+  {
     digitalWrite(outPin, LOW);
-    if (state == 1) {
-      readInput();
-    }
+    readInput();
+    if (interpolationTimer <= 0) {
+        timeRefInterpolation = millis();
+        int val = readIntensity - intesity;
+        if (val > 0) {
+          intesity += 1;
+        }
+        if (val < 0) {
+          intesity -= 1;
+        }
+      }
   }
+  
 
-  //low pulz
-  if (lowPulseTimer <= 0) {
-    timeRefLow = millis();
+
+  if (intesity == 200) {
     digitalWrite(outPin, HIGH);
+    readInput();
+    if (interpolationTimer <= 0) {
+        timeRefInterpolation = millis();
+        int val = readIntensity - intesity;
+        if (val > 0) {
+          intesity += 1;
+        }
+        if (val < 0) {
+          intesity -= 1;
+        }
+      }
 
-    if (state == 0) {
-      readInput();
+  }
+    else {
+
+      //high pulz
+      if (highPulsTimer <= 0) {
+        // timeRefHigh = millis();
+        digitalWrite(outPin, LOW);
+        if (state == 1) {
+          readInput();
+        }
+      }
+
+      //low pulz
+      if (lowPulseTimer <= 0) {
+        timeRefLow = millis();
+        digitalWrite(outPin, HIGH);
+
+        if (state == 0) {
+          readInput();
+        }
+      }
+
+      //low pulz
+      if (interpolationTimer <= 0) {
+        timeRefInterpolation = millis();
+        int val = readIntensity - intesity;
+        if (val > 0) {
+          intesity += 1;
+        }
+        if (val < 0) {
+          intesity -= 1;
+        }
+      }
     }
   }
-}
 
 
-void readInput() {
-  // if (Serial.available() > 0) {
-  //   intensity = Serial.parseInt();
-  //   // intensity = mappingTable[intensity];
-  //   Serial.println(intensity);
-  //   ifintensity0 = intensity - 100;
-  //   ifintensity1 = intensity - 100;
-  //   if (ifintensity0 >= 0) {
-  //     state = 0;
-  //   }
-  //   if (ifintensity1 < 0) {
-  //     state = 1;
-  //   }
-  // }
-  if (digitalRead(7) == 0) {
-    intensity = analogRead(A0);
-    intensity = intensity - 150;
-    intensity = intensity * 0.235;
-    if (lcdTimer <= 0) {
-      timeRefLcd = millis();
-      lcd.setCursor(0, 0);
-      lcd.print("SPD ");  // You can make spaces using well... spaces
-      lcd.setCursor(4, 0);
-      lcd.print("   "); // Or setting the cursor in the desired position.
+
+  void readInput() {
+    // if (Serial.available() > 0) {
+    //   intensity = Serial.parseInt();
+    //   // intensity = mappingTable[intensity];
+    //   Serial.println(intensity);
+    //   ifintensity0 = intensity - 100;
+    //   ifintensity1 = intensity - 100;
+    //   if (ifintensity0 >= 0) {
+    //     state = 0;
+    //   }
+    //   if (ifintensity1 < 0) {
+    //     state = 1;
+    //   }
+    // }
+    if (digitalRead(7) == 0) {
+      if (turnoff) {
+        intesity = 200;
+        turnoff = false;
+      }
+      //readIntensity = analogRead(A0);
+      if (Serial.available() > 0) {
+        readIntensity = Serial.parseInt();
+        Serial.println(readIntensity);
+      }
+      //readIntensity = readIntensity - 700;
+      //readIntensity = readIntensity * 0.65;
+      // if (readIntensity >= 200) {
+      //   readIntensity = 200;
+      // }
+      // if (readIntensity <= 0) {
+      //   readIntensity = 0;
+      // }
+      // readIntensity = mappingTable[readIntensity];
+
+      if (lcdTimer <= 0) {
+        timeRefLcd = millis();
+        lcd.setCursor(0, 0);
+        lcd.print("SET ");  // You can make spaces using well... spaces
         lcd.setCursor(4, 0);
-      lcd.print(intensity);
-      lcd.setCursor(9, 0);
-      lcd.print("stv zap");
+        lcd.print("   ");  // Or setting the cursor in the desired position.
+        lcd.setCursor(4, 0);
+        lcd.print(readIntensity);
+        lcd.setCursor(9, 0);
+        lcd.print("stv zap");
+        lcd.setCursor(0, 1);
+        lcd.print("SPD ");
+        lcd.setCursor(5, 1);
+        lcd.print("      ");
+        lcd.setCursor(5, 1);
+        lcd.print(intesity);
+      }
+    } else {
+      turnoff = true;
+      readIntensity = 0;
+      if (lcdTimer <= 0) {
+        timeRefLcd = millis();
+        lcd.setCursor(0, 0);
+        lcd.print("SET ");  // You can make spaces using well... spaces
+        lcd.setCursor(4, 0);
+        lcd.print("   ");  // Or setting the cursor in the desired position.
+        lcd.setCursor(4, 0);
+        lcd.print(readIntensity);
+        lcd.setCursor(9, 0);
+        lcd.print("stv vyp");
+        lcd.setCursor(0, 1);
+        lcd.print("SPD ");
+        lcd.setCursor(5, 1);
+        lcd.print("      ");
+        lcd.setCursor(5, 1);
+        lcd.print(intesity);
+      }
     }
-  } else {
-    intensity = 0;
-    if (lcdTimer <= 0) {
-      timeRefLcd = millis();
-    lcd.setCursor(0, 0);
-    lcd.print("SPD ");  // You can make spaces using well... spaces
-    lcd.setCursor(4, 0);
-    lcd.print("   ");  // Or setting the cursor in the desired position.
-      lcd.setCursor(4, 0);
-    lcd.print(intensity);
-    lcd.setCursor(9, 0);
-    lcd.print("stv vyp");
+    // Serial.println(intensity);
+
+    ifintensity0 = readIntensity - 100;
+    ifintensity1 = readIntensity - 100;
+    if (ifintensity0 >= 0) {
+      state = 0;
+    }
+    if (ifintensity1 < 0) {
+      state = 1;
     }
   }
-  // Serial.println(intensity);
 
-  ifintensity0 = intensity - 100;
-  ifintensity1 = intensity - 100;
-  if (ifintensity0 >= 0) {
-    state = 0;
+
+
+
+  void expesiveOperation() {
+    readInput();
   }
-  if (ifintensity1 < 0) {
-    state = 1;
-  }
-}
-
-
-
-
-void expesiveOperation() {
-  readInput();
-}
